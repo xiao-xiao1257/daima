@@ -1,80 +1,43 @@
-name: Build & Release
-on:
-  push:
-    branches: [ "main" ]
-    tags: [ "v*" ]  # 版本标签触发发布
-  pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:  # 允许手动触发
+name: Cross-Platform Build
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+        # 解除环境依赖关系
+        fail-fast: false  
     runs-on: ${{ matrix.os }}
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 完整检出历史
+        path: main-repo  # 指定检出目录
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-          cache: 'pip'
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        cache-dependency-path: 'main-repo/requirements.txt'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
+    - name: Install Dependencies
+      run: |
+        cd main-repo
+        pip install -r requirements.txt
 
-      - name: Build Executable
-        env:
-          OS_TYPE: ${{ runner.os }}
-        run: |
-          # Windows 特殊处理
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            pyinstaller --onefile src/main.py \
-              --name "TextGenerator_${{ github.run_number }}" \
-              --icon assets/app_icon.ico \
-              --add-data "assets/app_icon.ico;assets/" \
-              --add-data ".env;."
-          else
-            pyinstaller --onefile src/main.py \
-              --name "TextGenerator_${{ github.run_number }}" \
-              --add-data "assets/app_icon.ico:assets/" \
-              --add-data ".env:."
-          fi
+    - name: Build Executable
+      working-directory: ./main-repo
+      run: |
+        pyinstaller --onefile src/main.py \
+          --add-data "assets/app_icon.ico:assets/" \
+          --add-data ".env:." \
+          --name TextGenerator
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: TextGenerator_${{ runner.os }}_${{ github.run_number }}
-          path: |
-            dist/*
-            assets/app_icon.ico
-            .env
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          name: Release ${{ github.ref_name }}
-          body: |
-            Auto-generated build for version ${{ github.ref_name }}
-            - Build Number: ${{ github.run_number }}
-            - Commit: ${{ github.sha }}
-          files: |
-            TextGenerator_*/*
-            !*.pdb
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Build-${{ matrix.os }}
+        path: main-repo/dist/*
