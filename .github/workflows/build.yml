@@ -19,7 +19,8 @@ jobs:
       run: pyinstaller --onefile src/文本生成器.py --name 文本生成器
       
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+    # 使用动态文件名
+    - uses: actions/upload-artifact@v4
       with:
-        name: 文本生成器-Windows
-        path: dist/文本生成器.exe
+        name: MyApp-${{ env.VERSION }}-${{ runner.os }}
+        path: dist/*
