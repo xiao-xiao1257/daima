@@ -1,3 +1,5 @@
+- run: pyinstaller --onefile main.py
++ run: pyinstaller --onefile src/main.py
 # .github/workflows/build.yml 建议升级为
 name: CI/CD Pipeline
 on: [push, pull_request]
