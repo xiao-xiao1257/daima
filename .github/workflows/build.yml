@@ -12,15 +12,20 @@ jobs:
       with:
         python-version: '3.11'
         
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        
     - name: Install dependencies
       run: pip install pyinstaller
       
     - name: Build EXE
-      run: pyinstaller --onefile src/文本生成器.py --name 文本生成器
+      run: pyinstaller --onefile src/main.py --name MyApp
       
     - name: Upload artifact
-    # 使用动态文件名
-    - uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4
       with:
-        name: MyApp-${{ env.VERSION }}-${{ runner.os }}
-        path: dist/*
+        name: MyApp-Windows
+        path: dist/MyApp.exe
