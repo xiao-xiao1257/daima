@@ -4,17 +4,16 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     strategy:
+      fail-fast: false  # ✅ 此处缩进与 matrix 同级
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        # 解除环境依赖关系
-        fail-fast: false  
     runs-on: ${{ matrix.os }}
     
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # 完整检出历史
-        path: main-repo  # 指定检出目录
+        fetch-depth: 0
+        path: main-repo
 
     - name: Setup Python
       uses: actions/setup-python@v4
